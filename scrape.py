@@ -59,35 +59,37 @@ def main():
         print("Getting data, please wait ...")
         Path("./data/reviews").mkdir(parents=True, exist_ok=True)
         for i, row in tqdm(df.iterrows(), total=len(df)):
-            output_file = f"./data/reviews/{row['name']}.json"
-            if os.path.exists(output_file):
-                logger.info(f"File for {row['link']} already exists. Skipping ...")
-                continue
-            logger.info(f"Scrapping reviews for {row['link']}")
-            run_input["startUrls"] = [{"url": row.expanded_link}]
+            for lang in ["en", "ar"]:
+                output_file = f"./data/reviews/{row['name']}-{lang}.json"
+                if os.path.exists(output_file):
+                    logger.info(f"File for {row['link']} in {lang} already exists. Skipping ...")
+                    continue
+                logger.info(f"Scrapping reviews for {row['link']} in {lang}")
+                run_input["startUrls"] = [{"url": row.expanded_link}]
+                run_input["language"] = lang
 
-            # begin scrapping
-            start = time.time()
-            run = client.actor(actor_name).call(run_input=run_input)
-            end = time.time()
+                # begin scrapping
+                start = time.time()
+                run = client.actor(actor_name).call(run_input=run_input)
+                end = time.time()
 
-            elapsed_time = end - start
-            logger.info(f"Elapsed time for {row['link']}: {elapsed_time: 0.4f}s")
-            total_time += elapsed_time
-            print(f"Total time so far: {total_time: 0.4f}s")
+                elapsed_time = end - start
+                logger.info(f"Elapsed time for {row['link']} in {lang}: {elapsed_time: 0.4f}s")
+                total_time += elapsed_time
+                print(f"Total time so far: {total_time: 0.4f}s")
 
-            results = []
-            for item in client.dataset(run["defaultDatasetId"]).iterate_items():
-                results.append(item)
+                results = []
+                for item in client.dataset(run["defaultDatasetId"]).iterate_items():
+                    results.append(item)
 
-            total_textual_reviews = sum(
-                [r["text"] is not None for r in results[0]["reviews"]]
-            )
-            logger.info(f"Total scrapped reviews is {total_textual_reviews}")
-            logger.info(f"Total ratings is {len(results[0]['reviews'])}")
+                total_textual_reviews = sum(
+                    [r["text"] is not None for r in results[0]["reviews"]]
+                )
+                logger.info(f"Total scrapped reviews is {total_textual_reviews}")
+                logger.info(f"Total ratings is {len(results[0]['reviews'])}")
 
-            with open(output_file, "w", encoding="utf-8") as f:
-                json.dump(results, f, indent=2, ensure_ascii=False)
+                with open(output_file, "w", encoding="utf-8") as f:
+                    json.dump(results, f, indent=2, ensure_ascii=False)
 
     logger.info(f"Total scrapping time is {total_time: 0.4f}s")
     logger.info(f"{'-' * 50}")
