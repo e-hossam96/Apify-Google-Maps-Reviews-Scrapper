@@ -1,0 +1,5 @@
+rich==13.7.0
+tqdm==4.66.1
+pandas==2.1.4
+requests==2.31.0
+apify-client==1.6.2
